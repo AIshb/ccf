@@ -17,11 +17,12 @@ def main():
     user = pd.read_csv(USER)
     knn = 20
 
-    # get knn shop
+    # fit kd tree
     test_location = pd.merge(test, trace, left_on=['USERID', 'ARRIVAL_TIME'], right_on=['USERID', 'BEGIN_TIME'])
+    test_location.drop(['BEGIN_TIME', 'DURATION'], axis=1, inplace=True)
     nn = NearestNeighbors(n_neighbors=knn)
     nn.fit(shop[['LONGITUDE', 'LATITUDE']])
-    idx = nn.kneighbors(test_location[['STARTLONGTITUDE', 'STARTLATITUDE']], return_distance=False)
+#    idx = nn.kneighbors(test_location[['STARTLONGTITUDE', 'STARTLATITUDE']], return_distance=False)
 
     # generate train/test set
     df = pd.merge(train[['USERID', 'SHOPID']], user, on='USERID')
@@ -30,15 +31,24 @@ def main():
     train_x = df.drop(['CLASSIFICATION'], axis=1)
     train_y = df['CLASSIFICATION']
     print(train_x.shape, train_y.shape)
+    print(train_x.columns)
     
     # train a classifier
     clf = RandomForestClassifier(n_jobs=-1)
     clf.fit(train_x, train_y)
 
+    # cross_val
+    cross_rf = RandomForestClassifier(n_estimators=30, class_weight='balanced', n_jobs=-1)
+    score = cross_val_score(cross_rf, train_x, train_y,
+                            cv=5, n_jobs=-1)
+    print(score)
+
     # get test label
-    test_user = pd.merge(test_location[['USERID', 'ARRIVAL_TIME']], user, on='USERID')
-    test_label = clf.predict(test_user.drop(['USERID', 'ARRIVAL_TIME'], axis=1))
-    print(test_label)
+    test_user = pd.merge(test_location, user, on='USERID')
+    idx = nn.kneighbors(test_user[['STARTLONGTITUDE', 'STARTLATITUDE']], return_distance=False)
+    test_x = test_user.drop(['USERID', 'ARRIVAL_TIME', 'STARTLONGTITUDE', 'STARTLATITUDE'], axis=1)
+    print(test_x.columns)
+    pred = clf.predict(test_x)
 
     # get shop id
     result = test_user[['USERID', 'ARRIVAL_TIME']]
@@ -46,14 +56,12 @@ def main():
     for i in range(len(result)):
         is_find = False
         for j in range(knn):
-            if test_label[i] == shop['CLASSIFICATION'][idx[i][j]]:
+            if pred[i] == shop['CLASSIFICATION'][idx[i][j]]:
                 shop_id.append(int(shop['ID'][idx[i][j]]))
                 is_find = True
                 break
         if not is_find:
             shop_id.append('')
-
-    print(shop_id)
 
     result.insert(1, 'SHOPID', shop_id)
     result['USERID'] = result['USERID'].astype(int)
