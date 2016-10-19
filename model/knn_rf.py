@@ -36,12 +36,12 @@ def main():
     clf.fit(train_x, train_y)
 
     # get test label
-    test_user = pd.merge(test[['USERID']], user, on='USERID')
-    test_label = clf.predict(test_user.drop('USERID', axis=1))
+    test_user = pd.merge(test_location[['USERID', 'ARRIVAL_TIME']], user, on='USERID')
+    test_label = clf.predict(test_user.drop(['USERID', 'ARRIVAL_TIME'], axis=1))
     print(test_label)
 
     # get shop id
-    result = test
+    result = test_user[['USERID', 'ARRIVAL_TIME']]
     shop_id = []
     for i in range(len(result)):
         is_find = False
