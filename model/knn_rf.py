@@ -34,7 +34,7 @@ def main():
     print(train_x.columns)
     
     # train a classifier
-    clf = RandomForestClassifier(n_jobs=-1)
+    clf = RandomForestClassifier(n_estimators=30, class_weight='balanced', n_jobs=-1)
     clf.fit(train_x, train_y)
 
     # cross_val
@@ -63,8 +63,8 @@ def main():
         if not is_find:
             shop_id.append('')
 
-    result.insert(1, 'SHOPID', shop_id)
     result['USERID'] = result['USERID'].astype(int)
+    result.insert(1, 'SHOPID', shop_id)
     result.to_csv('output/knn_rf.csv', index=False)
 
 
