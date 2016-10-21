@@ -82,7 +82,7 @@ def main():
     train_set = train_set.values
     np.random.shuffle(train_set)
 
-    clf = RandomForestClassifier(n_estimators=30, class_weight='balanced', n_jobs=-1)
+    clf = RandomForestClassifier(n_estimators=50, class_weight='balanced', n_jobs=-1)
     clf.fit(train_set[:, :-1], train_set[:, -1])
 
     pred.insert(1, 'SHOPID', clf.predict(test_set))
